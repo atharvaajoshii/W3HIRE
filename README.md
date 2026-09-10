@@ -78,6 +78,8 @@ The goal is simple:
 <p align="center">
   <img src="docs/screenshots/escrow.png" alt="NHCE Active Milestone Escrows" width="850">
 </p>
+
+---
 ## Features
 
 ### Authentication & Profiles
