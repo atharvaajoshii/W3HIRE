@@ -41,6 +41,17 @@ enum MilestoneStatus {
   RELEASED
   DISPUTED
   PROCESSING_AUTORELEASE
+  LOCKED
+  IN_PROGRESS
+  PENDING_APPROVAL
+  REVISION_REQUESTED
+  COMPLETED
+  // Dispute resolved in the client's favor: the escrow contract has no
+  // refund function (only releaseMilestone, which pays the freelancer), so
+  // there is no real on-chain transfer — the funds simply stay unreleased
+  // in the vault. This just records that outcome. See
+  // migration 20260905010000_milestone_refunded_status.
+  REFUNDED
 }
 
 enum DisputeStatus {
@@ -157,24 +168,28 @@ model Job {
 }
 
 model Milestone {
-  id              String          @id @default(uuid())
-  jobId           String
-  job             Job             @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  title           String
-  description     String
-  amount          Float
-  deadline        DateTime?
-  deliverableLink String?
-  githubPrUrl     String?
-  deploymentUrl   String?
-  aiReviewScore   Float?
-  status          MilestoneStatus @default(PENDING)
-  submittedAt     DateTime?
+  id                   String          @id @default(uuid())
+  jobId                String
+  job                  Job             @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  order                Int             @default(1)
+  title                String
+  description          String
+  amount               Float
+  deadline             DateTime?
+  deliverableLink      String?
+  deliverableNotes     String?
+  githubPrUrl          String?
+  deploymentUrl        String?
+  aiReviewScore        Float?
+  status               MilestoneStatus @default(LOCKED)
+  submittedAt          DateTime?
+  verificationDeadline DateTime?
+  revisionReason       String?
 
-  disputes        Dispute[]
+  disputes             Dispute[]
 
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
 }
 
 model JobApplication {

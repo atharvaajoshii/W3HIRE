@@ -2,7 +2,19 @@
 
 > A Web3-native freelance marketplace built for transparent work, milestone-based payments, and trustless collaboration.
 
-**NHCE** is a full-stack Web3 freelance platform that connects clients with freelancers through structured projects, milestone-based workflows, secure authentication, and blockchain-powered payments.
+## Preview
+
+![W3HIRE landing page](docs/screenshots/landing-page.png)
+
+## Tech Stack
+
+### Frontend
+
+* Next.js
+* TypeScript
+* Tailwind CSS
+
+### Backend
 
 The platform combines a familiar Web2 application experience with Web3 infrastructure where it actually adds value.
 

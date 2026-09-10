@@ -43,13 +43,6 @@ function isRealToken(t: string | null): boolean {
   return !!t && !t.startsWith("admin_auth_jwt_") && !t.startsWith("mock_jwt_token_");
 }
 
-/** The Supabase-seeded admin user object carries a placeholder wallet string
- *  ("0x71C...b821") that isn't a real, votable address — only trust a value
- *  that actually looks like one. */
-function isRealWalletAddress(addr: string | null | undefined): addr is string {
-  return !!addr && /^0x[a-fA-F0-9]{40}$/.test(addr);
-}
-
 function formatUSD(n: number): string {
   return `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
@@ -135,29 +128,38 @@ export default function AdminPortalPage() {
   const activity = activityData ?? [];
 
   const [selectedDisputeId, setSelectedDisputeId] = useState<string | null>(null);
-  const activeDispute = disputes.find((d) => d.id === selectedDisputeId) ?? disputes[0] ?? null;
+  // Default to the first still-open case, not just whatever happens to be
+  // first in the list — a resolved dispute shouldn't be the thing an admin
+  // sees by default just because nothing else is open. An admin can still
+  // explicitly pick a resolved case from the dropdown to review it.
+  const openDisputes = disputes.filter((d) => d.status === "OPEN" || d.status === "VOTING");
+  const activeDispute =
+    disputes.find((d) => d.id === selectedDisputeId) ?? (selectedDisputeId ? null : openDisputes[0] ?? null);
 
-  // Voting
-  const [voterWallet, setVoterWallet] = useState("");
+  // Voting — the admin console has no wallet of its own. It doesn't need
+  // one: the backend auto-assigns each admin-cast vote to the next
+  // not-yet-voted juror slot on the dispute (falling back to real connected
+  // JUROR wallets first if any exist). `myVoteAddress` just remembers which
+  // slot THIS session's vote landed on, so the UI can show "your vote"
+  // without ever asking for an address up front.
   const [voting, setVoting] = useState(false);
   const [voteError, setVoteError] = useState<string | null>(null);
   const [resolving, setResolving] = useState(false);
+  const [resolveMessage, setResolveMessage] = useState<string | null>(null);
+  const [myVoteAddress, setMyVoteAddress] = useState<string | null>(null);
 
-  const effectiveWallet = isRealWalletAddress(user?.walletAddress) ? user!.walletAddress! : voterWallet;
   const myVote = activeDispute?.votes.find(
-    (v) => v.jurorAddress.toLowerCase() === effectiveWallet.toLowerCase()
+    (v) => myVoteAddress && v.jurorAddress.toLowerCase() === myVoteAddress.toLowerCase()
   );
 
   const handleCastVote = async (choice: JurorVoteChoice) => {
     if (!activeDispute || !token) return;
-    if (!isRealWalletAddress(effectiveWallet)) {
-      setVoteError("Enter a valid wallet address (0x...) to vote as a juror.");
-      return;
-    }
     setVoting(true);
     setVoteError(null);
     try {
-      await castDisputeVote(token, activeDispute.id, choice);
+      const res = await castDisputeVote(token, activeDispute.id, choice);
+      const vote = res.vote as { jurorAddress?: string } | undefined;
+      if (vote?.jurorAddress) setMyVoteAddress(vote.jurorAddress);
       reloadDisputes();
     } catch (e) {
       setVoteError(e instanceof ApiError ? e.message : "Failed to cast vote.");
@@ -170,8 +172,20 @@ export default function AdminPortalPage() {
     if (!activeDispute || !token) return;
     setResolving(true);
     setVoteError(null);
+    setResolveMessage(null);
     try {
-      await resolveAdminDispute(token, activeDispute.id);
+      const res = await resolveAdminDispute(token, activeDispute.id);
+      if (res.fundOutcome === "RELEASED_TO_FREELANCER") {
+        setResolveMessage(
+          `Resolved in the freelancer's favor — milestone released${res.releaseTxHash ? ` (tx: ${res.releaseTxHash})` : ""}.`
+        );
+      } else if (res.fundOutcome === "REFUNDED_TO_CLIENT") {
+        setResolveMessage(
+          "Resolved in the client's favor — milestone marked refunded. No on-chain transfer happens: the escrow contract has no refund function, so the funds simply stay unreleased in the vault."
+        );
+      } else if (res.releaseError) {
+        setResolveMessage(`Resolved, but the on-chain release failed: ${res.releaseError}`);
+      }
       reloadDisputes();
     } catch (e) {
       setVoteError(e instanceof ApiError ? e.message : "Failed to resolve dispute.");
@@ -411,6 +425,27 @@ export default function AdminPortalPage() {
               <div className="p-10 rounded-3xl bg-surface border border-surface-border text-center text-sm text-muted">
                 No disputes have been raised yet.
               </div>
+            ) : !activeDispute ? (
+              <div className="p-10 rounded-3xl bg-surface border border-surface-border text-center space-y-4">
+                <p className="text-sm text-muted">No open disputes — nothing needs arbitration right now.</p>
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-xs text-muted font-mono">Review a resolved case:</span>
+                  <select
+                    value=""
+                    onChange={(e) => setSelectedDisputeId(e.target.value)}
+                    className="px-3 py-1.5 rounded-xl bg-background border border-surface-border text-xs font-mono text-foreground focus:outline-none focus:border-moss"
+                  >
+                    <option value="" disabled>
+                      Select a case…
+                    </option>
+                    {disputes.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.job.title} — {d.status}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             ) : (
               <>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -608,21 +643,6 @@ export default function AdminPortalPage() {
                         )}
 
                         <div className="pt-4 border-t border-surface-border space-y-3">
-                          {!isRealWalletAddress(user.walletAddress) && (
-                            <div>
-                              <label className="text-[10px] font-mono uppercase text-muted block mb-1">
-                                Your juror wallet address
-                              </label>
-                              <input
-                                type="text"
-                                value={voterWallet}
-                                onChange={(e) => setVoterWallet(e.target.value.trim())}
-                                placeholder="0x..."
-                                className="w-full px-3 py-2 rounded-xl bg-background border border-surface-border text-xs font-mono text-foreground focus:outline-none focus:border-moss"
-                              />
-                            </div>
-                          )}
-
                           {voteError && (
                             <p className="text-[11px] text-red-400 font-mono">{voteError}</p>
                           )}
@@ -665,6 +685,12 @@ export default function AdminPortalPage() {
                             >
                               {resolving ? "Resolving…" : "Finalize by Current Majority"}
                             </button>
+                          )}
+
+                          {resolveMessage && (
+                            <div className="p-3 rounded-xl bg-surface border border-surface-border text-[11px] font-mono text-muted leading-relaxed">
+                              {resolveMessage}
+                            </div>
                           )}
                         </div>
                       </div>

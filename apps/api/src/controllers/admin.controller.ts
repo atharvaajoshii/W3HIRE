@@ -11,7 +11,9 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
 import { prisma } from '../config/db.config';
-import { DisputeStatus, JobStatus, VoteChoice } from '@prisma/client';
+import { DisputeStatus, JobStatus, VoteChoice, MilestoneStatus, LedgerEventType, LedgerStatus } from '@prisma/client';
+import { escrowService } from '../services/web3/escrow.service';
+import { recordLedgerEvent, isMockTxHash, isMockEscrowAddress } from '../services/ledger.service';
 
 const RELEASED_ISH_STATUSES: JobStatus[] = [
   JobStatus.FREELANCER_SELECTED,
@@ -205,14 +207,25 @@ export class AdminController {
   /**
    * POST /api/admin/disputes/:id/resolve
    * Finalizes a dispute by real vote majority (whichever choice has more
-   * votes; a tie is rejected). Requires at least one vote. There is no
-   * automated warning/rating-penalty system in the schema, so this only
-   * records the outcome — it does not fabricate consequences that don't exist.
+   * votes; a tie is rejected). Requires at least one vote.
+   *
+   * Real fund consequence of the outcome:
+   *  - FREELANCER_FAVOR: releases the disputed milestone for real, through
+   *    the same escrowService.releaseMilestonePayment() call the normal
+   *    (non-disputed) release flow uses.
+   *  - CLIENT_FAVOR: the JobEscrow contract has no refund function (only
+   *    releaseMilestone, which pays the freelancer) — so there is no real
+   *    on-chain transfer to trigger. The funds simply stay unreleased in
+   *    the vault; this just marks the milestone REFUNDED so it stops
+   *    appearing as payable and the ledger records what happened.
    */
   public async resolveDispute(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const id = String(req.params.id);
-      const dispute = await prisma.dispute.findUnique({ where: { id }, include: { votes: true } });
+      const dispute = await prisma.dispute.findUnique({
+        where: { id },
+        include: { votes: true, milestone: { include: { job: true } } },
+      });
       if (!dispute) {
         res.status(404).json({ error: 'Dispute not found' });
         return;
@@ -234,6 +247,112 @@ export class AdminController {
 
       const outcome: VoteChoice = freelancerFavor > clientFavor ? VoteChoice.FREELANCER_FAVOR : VoteChoice.CLIENT_FAVOR;
 
+      const milestone = dispute.milestone;
+      const job = milestone?.job;
+      let fundOutcome: 'RELEASED_TO_FREELANCER' | 'REFUNDED_TO_CLIENT' | 'ALREADY_SETTLED' | 'SKIPPED_NO_MILESTONE' =
+        'SKIPPED_NO_MILESTONE';
+      let releaseTxHash: string | null = null;
+      let releaseError: string | null = null;
+
+      if (milestone && job) {
+        const alreadySettled =
+          milestone.status === MilestoneStatus.RELEASED || milestone.status === MilestoneStatus.REFUNDED;
+
+        if (alreadySettled) {
+          fundOutcome = 'ALREADY_SETTLED';
+        } else if (outcome === VoteChoice.FREELANCER_FAVOR) {
+          const escrowAddress = job.escrowAddress || '0x' + '1'.repeat(40);
+          void recordLedgerEvent({
+            jobId: job.id,
+            milestoneId: milestone.id,
+            escrowId: escrowAddress,
+            eventType: LedgerEventType.PAYMENT_PENDING,
+            status: LedgerStatus.PENDING,
+            actorId: req.user?.id ?? null,
+            actorRole: req.user?.role ?? null,
+            amount: milestone.amount,
+            currency: job.tokenSymbol,
+            previousStatus: milestone.status,
+            newStatus: null,
+            description: `Dispute resolved in freelancer's favor — releasing milestone payout`,
+            details: { disputeId: dispute.id },
+            dedupeKey: `payment-pending:${milestone.id}:${Date.now()}`,
+          });
+
+          try {
+            const releaseResult = await escrowService.releaseMilestonePayment(escrowAddress, 1);
+            releaseTxHash = releaseResult.txHash;
+            const mocked = isMockTxHash(releaseResult.txHash) || isMockEscrowAddress(escrowAddress);
+
+            await prisma.milestone.update({ where: { id: milestone.id }, data: { status: MilestoneStatus.RELEASED } });
+
+            void recordLedgerEvent({
+              jobId: job.id,
+              milestoneId: milestone.id,
+              escrowId: escrowAddress,
+              eventType: LedgerEventType.MILESTONE_RELEASED,
+              status: mocked ? LedgerStatus.PENDING : LedgerStatus.CONFIRMED,
+              actorId: req.user?.id ?? null,
+              actorRole: req.user?.role ?? null,
+              amount: milestone.amount,
+              currency: job.tokenSymbol,
+              previousStatus: milestone.status,
+              newStatus: MilestoneStatus.RELEASED,
+              description: mocked
+                ? 'Milestone released per dispute resolution (devnet mock payout — no real on-chain settlement)'
+                : 'Milestone released on-chain per dispute resolution',
+              details: { disputeId: dispute.id },
+              blockchainTransactionHash: releaseResult.txHash,
+              dedupeKey: `milestone-released:${milestone.id}`,
+            });
+            fundOutcome = 'RELEASED_TO_FREELANCER';
+          } catch (err: any) {
+            releaseError = String(err?.message || err);
+            void recordLedgerEvent({
+              jobId: job.id,
+              milestoneId: milestone.id,
+              escrowId: escrowAddress,
+              eventType: LedgerEventType.PAYMENT_FAILED,
+              status: LedgerStatus.FAILED,
+              actorId: req.user?.id ?? null,
+              actorRole: req.user?.role ?? null,
+              amount: milestone.amount,
+              currency: job.tokenSymbol,
+              previousStatus: milestone.status,
+              newStatus: milestone.status,
+              description: 'Milestone release (from dispute resolution) failed',
+              details: { disputeId: dispute.id, errorMessage: releaseError },
+              dedupeKey: `payment-failed:${milestone.id}:${Date.now()}`,
+            });
+            // Resolution still proceeds — the dispute outcome itself is
+            // final even if the on-chain release call failed; the failure
+            // is visible in the ledger for follow-up.
+          }
+        } else {
+          // CLIENT_FAVOR — no on-chain refund capability exists; record the
+          // real, honest outcome: no payout, milestone marked refunded.
+          await prisma.milestone.update({ where: { id: milestone.id }, data: { status: MilestoneStatus.REFUNDED } });
+          void recordLedgerEvent({
+            jobId: job.id,
+            milestoneId: milestone.id,
+            escrowId: job.escrowAddress,
+            eventType: LedgerEventType.PAYMENT_REFUNDED,
+            status: LedgerStatus.CONFIRMED,
+            actorId: req.user?.id ?? null,
+            actorRole: req.user?.role ?? null,
+            amount: milestone.amount,
+            currency: job.tokenSymbol,
+            previousStatus: milestone.status,
+            newStatus: MilestoneStatus.REFUNDED,
+            description:
+              'Dispute resolved in client\'s favor — milestone funds remain unreleased in escrow (no on-chain refund transfer: the escrow contract has no refund function)',
+            details: { disputeId: dispute.id },
+            dedupeKey: `payment-refunded:${milestone.id}`,
+          });
+          fundOutcome = 'REFUNDED_TO_CLIENT';
+        }
+      }
+
       const updated = await prisma.dispute.update({
         where: { id },
         data: { status: DisputeStatus.RESOLVED },
@@ -244,6 +363,9 @@ export class AdminController {
         dispute: updated,
         outcome,
         tally: { freelancerFavor, clientFavor },
+        fundOutcome,
+        releaseTxHash,
+        releaseError,
       });
     } catch (error: any) {
       res.status(500).json({ error: 'Failed to resolve dispute', message: error.message });
