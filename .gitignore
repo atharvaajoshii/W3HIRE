@@ -31,4 +31,5 @@ Thumbs.db
 # Hardhat build artifacts
 artifacts/
 cache/
-typechain-types/
+typechain-types/
+.claude
