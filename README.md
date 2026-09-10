@@ -1,10 +1,17 @@
 # NHCE
 
-> A Web3-native freelance marketplace built for transparent work, milestone-based payments, and trustless collaboration.
+> A Web3-native freelance marketplace for transparent work, milestone-based payments, and trustless collaboration.
 
-## Preview
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma)](https://www.prisma.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-4169E1?logo=postgresql)](https://www.postgresql.org/)
+[![Solidity](https://img.shields.io/badge/Solidity-Smart%20Contracts-363636?logo=solidity)](https://soliditylang.org/)
+[![Sepolia](https://img.shields.io/badge/Network-Sepolia-6C63FF)](https://sepolia.dev/)
 
-![W3HIRE landing page](docs/screenshots/landing-page.png)
+<p align="center">
+  <img src="docs/screenshots/landing-page.png" alt="NHCE Landing Page" width="900">
+</p>
 
 ## Tech Stack
 
@@ -52,6 +59,25 @@ The goal is simple:
 **Make freelance work more transparent, structured, and trustworthy.**
 
 ---
+## Product Showcase
+
+### Landing Page
+
+<p align="center">
+  <img src="docs/screenshots/landing-page.png" alt="NHCE Landing Page" width="850">
+</p>
+
+### Marketplace
+
+<p align="center">
+  <img src="docs/screenshots/marketplace.png" alt="NHCE Marketplace" width="850">
+</p>
+
+### Dashboard
+
+<p align="center">
+  <img src="docs/screenshots/dashboard.png" alt="NHCE Dashboard" width="850">
+</p>
 
 ## Features
 
