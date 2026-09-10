@@ -1,8 +1,27 @@
 # NHCE
 
-> A Web3-native freelance marketplace built for transparent work, milestone-based payments, and trustless collaboration.
+> A Web3-native freelance marketplace for transparent work, milestone-based payments, and trustless collaboration.
 
-**NHCE** is a full-stack Web3 freelance platform that connects clients with freelancers through structured projects, milestone-based workflows, secure authentication, and blockchain-powered payments.
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma)](https://www.prisma.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-4169E1?logo=postgresql)](https://www.postgresql.org/)
+[![Solidity](https://img.shields.io/badge/Solidity-Smart%20Contracts-363636?logo=solidity)](https://soliditylang.org/)
+[![Sepolia](https://img.shields.io/badge/Network-Sepolia-6C63FF)](https://sepolia.dev/)
+
+<p align="center">
+  <img src="docs/screenshots/landing-page.png" alt="NHCE Landing Page" width="900">
+</p>
+
+## Tech Stack
+
+### Frontend
+
+* Next.js
+* TypeScript
+* Tailwind CSS
+
+### Backend
 
 The platform combines a familiar Web2 application experience with Web3 infrastructure where it actually adds value.
 
