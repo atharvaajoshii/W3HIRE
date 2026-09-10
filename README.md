@@ -1,6 +1,6 @@
 # NHCE
 
-A full-stack web application built with **Next.js, NestJS, Prisma, and PostgreSQL (Supabase)**.
+> A Web3-native freelance marketplace built for transparent work, milestone-based payments, and trustless collaboration.
 
 ## Preview
 
@@ -16,543 +16,340 @@ A full-stack web application built with **Next.js, NestJS, Prisma, and PostgreSQ
 
 ### Backend
 
-* Node.js
-* NestJS
-* Prisma ORM
-
-### Database
-
-* PostgreSQL
-* Supabase
+The platform combines a familiar Web2 application experience with Web3 infrastructure where it actually adds value.
 
 ---
 
-# Project Structure
+## Why NHCE?
+
+Traditional freelance platforms often rely on centralized payment systems and opaque dispute processes.
+
+NHCE explores a different model:
+
+```text
+Client
+  │
+  ├── Create project
+  │
+  ▼
+Freelancer
+  │
+  ├── Apply / collaborate
+  │
+  ▼
+Milestones
+  │
+  ├── Work submitted
+  ├── Review
+  └── Release payment
+  │
+  ▼
+Blockchain / Escrow
+```
+
+The goal is simple:
+
+**Make freelance work more transparent, structured, and trustworthy.**
+
+---
+
+## Features
+
+### Authentication & Profiles
+
+* Email/password authentication
+* JWT-based sessions
+* Role-based access
+* Client and freelancer profiles
+* Profile onboarding
+* Portfolio and social links
+* Email verification
+
+### Freelance Marketplace
+
+* Browse available work
+* Create and publish projects
+* Freelancer applications
+* Client-side freelancer discovery
+* Project management
+
+### Milestone-Based Work
+
+* Break projects into milestones
+* Track milestone status
+* Submit work
+* Review progress
+* Automated inactivity handling
+
+### Web3 & Payments
+
+* MetaMask wallet integration
+* Ethereum Sepolia development network
+* Smart-contract based escrow architecture
+* Blockchain transaction handling
+* Wallet-linked user accounts
+
+### Disputes
+
+* Dispute creation
+* Juror-based resolution architecture
+* Voting system
+* Transparent dispute states
+
+### Platform Infrastructure
+
+* PostgreSQL database
+* Prisma ORM
+* Supabase
+* REST API
+* Scheduled background jobs
+* Shared monorepo architecture
+
+---
+
+## Tech Stack
+
+| Layer               | Technology                 |
+| ------------------- | -------------------------- |
+| Frontend            | Next.js, React, TypeScript |
+| Styling             | Tailwind CSS               |
+| Backend             | Node.js, TypeScript        |
+| API                 | REST                       |
+| ORM                 | Prisma                     |
+| Database            | PostgreSQL                 |
+| Database Platform   | Supabase                   |
+| Blockchain          | Ethereum                   |
+| Smart Contracts     | Solidity                   |
+| Development Network | Sepolia                    |
+| Wallet              | MetaMask                   |
+| Monorepo            | npm Workspaces             |
+
+---
+
+## Architecture
+
+```text
+                         ┌────────────────────┐
+                         │      Next.js       │
+                         │     Web Client     │
+                         └─────────┬──────────┘
+                                   │
+                              REST API
+                                   │
+                         ┌─────────▼──────────┐
+                         │     Backend API    │
+                         │    TypeScript      │
+                         └─────────┬──────────┘
+                                   │
+                         ┌─────────▼──────────┐
+                         │       Prisma       │
+                         └─────────┬──────────┘
+                                   │
+                         ┌─────────▼──────────┐
+                         │ PostgreSQL /       │
+                         │ Supabase           │
+                         └────────────────────┘
+
+                                   │
+                                   │ Web3
+                                   ▼
+
+                         ┌────────────────────┐
+                         │ Ethereum / Sepolia │
+                         │ Smart Contracts    │
+                         └────────────────────┘
+```
+
+---
+
+## Repository Structure
 
 ```text
 nhce/
 ├── apps/
-│   ├── web/          # Next.js frontend
-│   └── api/          # NestJS backend
+│   ├── web/                  # Next.js frontend
+│   └── api/                  # Backend API
 │
-├── packages/         # Shared packages (if required later)
+├── packages/                 # Shared packages
 │
+├── contracts/                # Solidity contracts
+├── scripts/                  # Blockchain scripts
+│
+├── prisma/
+│
+├── docs/
+│   ├── screenshots/
+│   └── ...
+│
+├── hardhat.config.ts
 ├── package.json
-├── package-lock.json
-└── .gitignore
+└── README.md
 ```
+
+> The exact structure may evolve as the platform grows.
 
 ---
 
-# Prerequisites
+## Getting Started
 
-Make sure you have the following installed:
+### Prerequisites
 
-* Node.js
+Make sure you have:
+
+* Node.js 20+
 * npm
 * Git
+* A Supabase PostgreSQL database
+* MetaMask for Web3 functionality
+* A Sepolia-compatible wallet for blockchain development
 
-Check your versions:
+See the complete setup guide:
 
-```bash
-node --version
-npm --version
-git --version
-```
-
----
-
-# 1. Fork the Repository
-
-Fork the repository to your own GitHub account:
-
-```text
-https://github.com/atharvaajoshii/nhce
-```
-
-Then clone **your fork**:
-
-```bash
-git clone https://github.com/<your-username>/nhce.git
-cd nhce
-```
-
-Add the original repository as `upstream`:
-
-```bash
-git remote add upstream https://github.com/atharvaajoshii/nhce.git
-```
-
-Verify:
-
-```bash
-git remote -v
-```
-
-You should see:
-
-```text
-origin    https://github.com/<your-username>/nhce.git
-upstream  https://github.com/atharvaajoshii/nhce.git
-```
-
-`origin` = your fork
-
-`upstream` = original NHCE repository
+**[Installation Guide](INSTALLATION.md)**
 
 ---
 
-# 2. Install Dependencies
+## Development
 
-From the project root:
+Install dependencies:
 
 ```bash
 npm install
 ```
 
-This installs the root/workspace dependencies.
-
-If required, you can also install dependencies inside the applications:
-
-```bash
-cd apps/web
-npm install
-
-cd ../api
-npm install
-
-cd ../..
-```
-
----
-
-# 3. Environment Variables
-
-The backend requires environment variables for the Supabase PostgreSQL database.
-
-Inside:
-
-```text
-apps/api/
-```
-
-create:
-
-```text
-.env
-```
-
-Add:
-
-```env
-DATABASE_URL="YOUR_SUPABASE_DATABASE_URL"
-DIRECT_URL="YOUR_SUPABASE_DIRECT_URL"
-```
-
-### Important
-
-Do **not** commit `.env`.
-
-Never push database passwords or credentials to GitHub.
-
-The repository's `.gitignore` already ignores environment files.
-
-If you need the development database credentials, contact the project maintainer.
-
----
-
-# 4. Prisma Setup
-
-Go to the backend:
-
-```bash
-cd apps/api
-```
-
-Validate the Prisma schema:
-
-```bash
-npx prisma validate
-```
-
-Sync the schema with the development database:
-
-```bash
-npx prisma db push
-```
-
-Generate Prisma Client:
-
-```bash
-npx prisma generate
-```
-
-You should see:
-
-```text
-The schema at prisma/schema.prisma is valid
-```
-
-and:
-
-```text
-The database is already in sync with the Prisma schema.
-```
-
----
-
-# 5. Start the Backend
-
-From:
-
-```text
-apps/api
-```
-
-run:
-
-```bash
-npm run start:dev
-```
-
-The NestJS API runs on:
-
-```text
-http://localhost:3001
-```
-
-Keep this terminal running.
-
----
-
-# 6. Start the Frontend
-
-Open another terminal.
-
-From the project root:
-
-```bash
-cd ~/Projects/nhce
-```
-
-Run:
+Start the frontend:
 
 ```bash
 npm run dev:web
 ```
 
-The frontend runs on:
+Start the backend:
+
+```bash
+npm run dev:api
+```
+
+Compile smart contracts:
+
+```bash
+npm run compile
+```
+
+Deploy contracts to Sepolia:
+
+```bash
+npm run deploy:sepolia
+```
+
+---
+
+## Environment Variables
+
+Environment variables are intentionally excluded from the repository.
+
+Backend configuration belongs in:
 
 ```text
-http://localhost:3000
+apps/api/.env
 ```
 
----
+Frontend configuration belongs in the appropriate `.env.local` file.
 
-# 7. Running Both Applications
-
-You need two terminals during development.
-
-### Terminal 1 — Backend
-
-```bash
-cd apps/api
-npm run start:dev
-```
-
-### Terminal 2 — Frontend
-
-```bash
-npm run dev:web
-```
-
-Architecture:
-
-```text
-Browser
-   │
-   ▼
-Next.js
-localhost:3000
-   │
-   │ HTTP/API
-   ▼
-NestJS
-localhost:3001
-   │
-   ▼
-Prisma
-   │
-   ▼
-Supabase PostgreSQL
-```
-
----
-
-# Git Workflow
-
-We use a **Fork → Branch → Pull Request → Review → Merge** workflow.
-
-## Branches
-
-### `main`
-
-Stable/production branch.
-
-### `dev`
-
-Development/integration branch.
-
-Do not directly push feature work to `main` or `dev`.
-
----
-
-# Creating a Feature Branch
-
-First make sure your local `dev` is up to date:
-
-```bash
-git fetch upstream
-git switch dev
-git pull --ff-only upstream dev
-```
-
-Create your feature branch:
-
-```bash
-git switch -c feature/<feature-name>
-```
-
-Examples:
-
-```bash
-git switch -c feature/authentication
-git switch -c feature/dashboard
-git switch -c feature/job-posting
-```
-
----
-
-# Commit Your Changes
-
-Check your changes:
-
-```bash
-git status
-```
-
-Stage them:
-
-```bash
-git add .
-```
-
-Commit:
-
-```bash
-git commit -m "Add <feature>"
-```
-
-Example:
-
-```bash
-git commit -m "Add user authentication"
-```
-
----
-
-# Push Your Feature Branch
-
-Push it to your fork:
-
-```bash
-git push -u origin feature/<feature-name>
-```
-
-Example:
-
-```bash
-git push -u origin feature/authentication
-```
-
----
-
-# Create a Pull Request
-
-After pushing your branch, open GitHub.
-
-Create a Pull Request from:
-
-```text
-your-fork
-feature/<feature-name>
-        ↓
-atharvaajoshii/nhce
-dev
-```
-
-Do **not** create feature PRs directly into `main`.
-
-The normal flow is:
-
-```text
-feature branch
-      ↓
-     PR
-      ↓
-     dev
-      ↓
- testing
-      ↓
-     PR
-      ↓
-    main
-```
-
----
-
-# Keeping Your Branch Updated
-
-Before starting new work:
-
-```bash
-git fetch upstream
-git switch dev
-git pull --ff-only upstream dev
-```
-
-Then create your feature branch from the updated `dev`:
-
-```bash
-git switch -c feature/<feature-name>
-```
-
----
-
-# Important Rules
-
-### 1. Never commit `.env`
+Never commit:
 
 ```text
 .env
 .env.local
+.env.production
 ```
 
-must remain private.
-
-### 2. Don't push directly to `main`
-
-Use Pull Requests.
-
-### 3. Don't push directly to `dev`
-
-Feature branches should go through PRs.
-
-### 4. Keep commits focused
-
-Prefer:
-
-```text
-Add authentication API
-```
-
-over:
-
-```text
-final changes
-```
-
-### 5. Pull before starting new work
-
-Always start your feature branch from the latest `dev`.
-
-### 6. Don't modify database schema casually
-
-If you modify:
-
-```text
-apps/api/prisma/schema.prisma
-```
-
-coordinate with the team before applying database changes.
+or any file containing private keys, database passwords, JWT secrets, or API keys.
 
 ---
 
-# Useful Commands
+## Git Workflow
 
-### Check branches
+NHCE follows a fork-based development workflow:
 
-```bash
-git branch
+```text
+Fork
+  ↓
+Feature Branch
+  ↓
+Pull Request
+  ↓
+dev
+  ↓
+Testing
+  ↓
+Pull Request
+  ↓
+main
 ```
 
-### Check remotes
+Feature branches should follow a clear naming convention:
 
-```bash
-git remote -v
-```
-
-### Get latest changes
-
-```bash
-git fetch upstream
-```
-
-### Update dev
-
-```bash
-git switch dev
-git pull --ff-only upstream dev
-```
-
-### Create feature branch
-
-```bash
-git switch -c feature/<name>
-```
-
-### Push feature branch
-
-```bash
-git push -u origin feature/<name>
-```
-
-### Check current changes
-
-```bash
-git status
+```text
+feature/authentication
+feature/project-management
+feature/messaging
+feature/escrow
+fix/prisma-connection
 ```
 
 ---
 
-# Development Checklist
+## Contributing
 
-Before starting development:
+1. Fork the repository.
+2. Create a feature branch from `dev`.
+3. Make focused changes.
+4. Test your changes locally.
+5. Commit with a meaningful message.
+6. Push your branch.
+7. Open a Pull Request into `dev`.
+
+Before submitting a PR, make sure:
 
 ```text
-✓ Fork repository
-✓ Clone your fork
-✓ Add upstream remote
-✓ Install dependencies
-✓ Create apps/api/.env
-✓ Configure Supabase credentials
-✓ Run Prisma validation
-✓ Start NestJS
-✓ Start Next.js
-✓ Create feature branch
-✓ Work on feature
-✓ Push feature branch
-✓ Open PR to dev
+✓ No secrets committed
+✓ TypeScript builds successfully
+✓ Prisma schema is valid
+✓ Frontend runs
+✓ Backend runs
+✓ Existing functionality is not broken
+✓ Changes are documented where necessary
 ```
 
 ---
 
-## Repository
+## Project Status
 
-Original repository:
+NHCE is actively under development.
 
-https://github.com/atharvaajoshii/nhce
+Current development areas include:
 
-Happy coding! 🚀
-THis is a check .
-atharva joshi
+* Authentication and onboarding
+* Marketplace workflows
+* Messaging
+* Milestone management
+* Escrow infrastructure
+* Dispute resolution
+* Admin tooling
+* Web3 wallet integration
+
+---
+
+## Vision
+
+NHCE is built around a simple idea:
+
+> Freelancing should not require blindly trusting a platform to handle every important part of the relationship.
+
+By combining conventional product design with blockchain infrastructure, NHCE aims to make ownership, payments, milestones, and dispute resolution more transparent without forcing users to understand Web3 to use the platform.
+
+---
+
+## License
+
+Add the project's chosen license here before publishing the repository as an open-source project.
