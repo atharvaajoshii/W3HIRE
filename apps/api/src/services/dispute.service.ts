@@ -10,6 +10,11 @@ import { wallet, DISPUTE_GOVERNOR_ABI } from '../config/web3.config';
 import { env } from '../config/env.config';
 import { DisputeStatus, VoteChoice } from '../models/Dispute';
 
+// Same fallback pool openDisputeCase() assigns when no real JUROR-role users
+// exist yet — kept here too so the admin console can auto-pick an unused
+// slot from the same pool without needing the assignment persisted anywhere.
+const MOCK_JUROR_ADDRESSES = ['0x' + '1'.repeat(40), '0x' + '2'.repeat(40), '0x' + '3'.repeat(40)];
+
 export class DisputeService {
   /**
    * Open a new dispute case in DB and on-chain DisputeGovernor
@@ -42,7 +47,7 @@ export class DisputeService {
 
     const jurorAddresses = jurors.length > 0
       ? jurors.map(j => j.walletAddress)
-      : ['0x' + '1'.repeat(40), '0x' + '2'.repeat(40), '0x' + '3'.repeat(40)];
+      : MOCK_JUROR_ADDRESSES;
 
     // 3. Trigger on-chain DisputeGovernor.openDispute()
     let txHash = '0x' + 'f'.repeat(64);
@@ -61,6 +66,27 @@ export class DisputeService {
     }
 
     return { dispute, jurorAddresses, txHash };
+  }
+
+  /**
+   * Auto-assigns the next not-yet-voted juror slot for a dispute, from the
+   * real assigned jurors if any exist, otherwise the same mock pool
+   * openDisputeCase() falls back to. Used by the admin console, which has no
+   * wallet of its own and shouldn't need one just to record a vote. Returns
+   * null once every slot in the pool has already voted.
+   */
+  public async pickNextJurorSlot(disputeId: string): Promise<string | null> {
+    const [existingVotes, realJurors] = await Promise.all([
+      prisma.jurorVote.findMany({ where: { disputeId }, select: { jurorAddress: true } }),
+      prisma.user.findMany({ where: { role: 'JUROR' }, select: { walletAddress: true } }),
+    ]);
+
+    const used = new Set(existingVotes.map((v) => v.jurorAddress.toLowerCase()));
+    const pool = realJurors.length > 0
+      ? realJurors.map((j) => j.walletAddress).filter((a): a is string => !!a)
+      : MOCK_JUROR_ADDRESSES;
+
+    return pool.find((addr) => !used.has(addr.toLowerCase())) ?? null;
   }
 
   /**

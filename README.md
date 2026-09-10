@@ -59,7 +59,25 @@ The goal is simple:
 **Make freelance work more transparent, structured, and trustworthy.**
 
 ---
+## Product Showcase
 
+### Landing Page
+
+<p align="center">
+  <img src="docs/screenshots/landing-page.png" alt="NHCE Landing Page" width="850">
+</p>
+
+### Web3 Wallet & Escrow
+
+<p align="center">
+  <img src="docs/screenshots/wallet.png" alt="NHCE Web3 Wallet and Escrow" width="850">
+</p>
+
+### Active Milestone Escrows
+
+<p align="center">
+  <img src="docs/screenshots/escrow.png" alt="NHCE Active Milestone Escrows" width="850">
+</p>
 ## Features
 
 ### Authentication & Profiles
@@ -128,7 +146,7 @@ The goal is simple:
 | Blockchain          | Ethereum                   |
 | Smart Contracts     | Solidity                   |
 | Development Network | Sepolia                    |
-| Wallet              | MetaMask                   |
+| Wallet              | MetaMask/Phantom           |
 | Monorepo            | npm Workspaces             |
 
 ---
@@ -210,9 +228,10 @@ Make sure you have:
 * MetaMask for Web3 functionality
 * A Sepolia-compatible wallet for blockchain development
 
-See the complete setup guide:
+## Documentation
 
-**[Installation Guide](INSTALLATION.md)**
+- [Installation Guide](INSTALLATION.md)
+- [Architecture](docs/architecture.md)
 
 ---
 

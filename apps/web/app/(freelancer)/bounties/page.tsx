@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, SlidersHorizontal, AlertCircle, Loader2, RotateCcw } from "lucide-react";
 import JobCard from "@/components/JobCard";
@@ -46,10 +46,58 @@ export default function BountiesPage() {
     { action: "Freelancer Hired", title: "Rust Protocol Engineer", time: "2h ago" }
   ];
 
-  const { data: jobsData, isLoading, error, reload: loadJobs } = useApiFetch<Job[]>(() =>
-    fetchJobs().then((d) => d.jobs || [])
-  );
+  const { data: jobsData, isLoading, error, reload: loadJobs } = useApiFetch<Job[]>(async () => {
+    let backendJobs: Job[] = [];
+    try {
+      const res = await fetchJobs();
+      backendJobs = res.jobs || [];
+    } catch (e) {}
+
+    let localProjects: Job[] = [];
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("w3hire_client_projects");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          localProjects = parsed
+            .filter((p: any) => p.status !== "DRAFT" && p.status !== "draft")
+            .map((p: any) => ({
+              id: p.id,
+              title: p.title,
+              description: p.description,
+              budget: p.budgetUSD || p.budget || 2000,
+              tokenSymbol: p.tokenSymbol || "ETH",
+              skills: p.skills || [],
+              status: "PUBLISHED" as const,
+              createdAt: p.createdAt || new Date().toISOString(),
+              updatedAt: p.createdAt || new Date().toISOString(),
+              client: { id: "c1", name: "Client", email: "client@w3hire.io", rating: 5 },
+              _count: { applications: p.applicants?.length || 0 },
+            }));
+        } catch (e) {}
+      }
+    }
+
+    const merged = [...backendJobs];
+    localProjects.forEach((lp) => {
+      if (!merged.some((bj) => bj.id === lp.id || bj.title.toLowerCase() === lp.title.toLowerCase())) {
+        merged.unshift(lp);
+      }
+    });
+
+    return merged;
+  });
   const jobs = useMemo(() => jobsData ?? [], [jobsData]);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      loadJobs();
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("w3hire_projects_updated", handleUpdate);
+      return () => window.removeEventListener("w3hire_projects_updated", handleUpdate);
+    }
+  }, [loadJobs]);
 
   const availableSkills = useMemo(() => {
     return Array.from(new Set(jobs.flatMap((j) => j.skills))).sort((a, b) => a.localeCompare(b));

@@ -101,24 +101,41 @@ export function fetchAdminDisputes(token: string): Promise<{ disputes: AdminDisp
 }
 
 /** Cast a juror vote — the real, existing POST /api/disputes/:id/vote endpoint
- *  (open to any wallet-connected session, not admin-only). Requires the
- *  caller's account to have a linked walletAddress. */
+ *  (open to any wallet-connected session, not admin-only). A normal session
+ *  votes as its own linked walletAddress; the admin console has none of its
+ *  own, so it must pass `jurorAddress` explicitly to vote on behalf of a
+ *  specified juror wallet (the backend only accepts this override for
+ *  ADMIN-role callers). */
 export function castDisputeVote(
   token: string,
   disputeId: string,
-  choice: JurorVoteChoice
+  choice: JurorVoteChoice,
+  jurorAddress?: string
 ): Promise<{ message: string; vote: unknown }> {
   return apiFetch(`/disputes/${disputeId}/vote`, {
     method: "POST",
     token,
-    body: JSON.stringify({ choice }),
+    body: JSON.stringify({ choice, ...(jurorAddress ? { jurorAddress } : {}) }),
   });
 }
+
+export type DisputeFundOutcome =
+  | "RELEASED_TO_FREELANCER"
+  | "REFUNDED_TO_CLIENT"
+  | "ALREADY_SETTLED"
+  | "SKIPPED_NO_MILESTONE";
 
 export function resolveAdminDispute(
   token: string,
   disputeId: string
-): Promise<{ message: string; outcome: JurorVoteChoice; tally: { freelancerFavor: number; clientFavor: number } }> {
+): Promise<{
+  message: string;
+  outcome: JurorVoteChoice;
+  tally: { freelancerFavor: number; clientFavor: number };
+  fundOutcome: DisputeFundOutcome;
+  releaseTxHash: string | null;
+  releaseError: string | null;
+}> {
   return apiFetch(`/admin/disputes/${disputeId}/resolve`, { method: "POST", token });
 }
 

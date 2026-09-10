@@ -60,19 +60,43 @@ export class DisputeController {
       }
 
       const id = String(req.params.id);
-      const { choice } = req.body;
+      const { choice, jurorAddress } = req.body;
 
       if (!choice || !Object.values(VoteChoice).includes(choice)) {
         res.status(400).json({ error: 'Invalid vote choice. Expected FREELANCER_FAVOR or CLIENT_FAVOR' });
         return;
       }
 
-      if (!req.user?.walletAddress) {
+      // Normal (non-admin) callers vote as their own linked wallet only. The
+      // admin console has no wallet of its own (its JWT carries no
+      // walletAddress) — it operates on behalf of assigned jurors for
+      // oversight, so for an ADMIN caller it either uses an explicitly given
+      // jurorAddress, or auto-assigns the next not-yet-voted juror slot so
+      // the admin doesn't need to supply a wallet address at all.
+      let voterAddress = req.user.walletAddress;
+      if (!voterAddress && req.user.role === 'ADMIN') {
+        if (typeof jurorAddress === 'string' && jurorAddress) {
+          if (!/^0x[a-fA-F0-9]{40}$/.test(jurorAddress)) {
+            res.status(400).json({ error: 'jurorAddress must be a valid 0x-prefixed wallet address' });
+            return;
+          }
+          voterAddress = jurorAddress;
+        } else {
+          const nextSlot = await disputeService.pickNextJurorSlot(id);
+          if (!nextSlot) {
+            res.status(409).json({ error: 'Every assigned juror has already voted on this dispute' });
+            return;
+          }
+          voterAddress = nextSlot;
+        }
+      }
+
+      if (!voterAddress) {
         res.status(400).json({ error: 'A connected wallet is required to vote on disputes' });
         return;
       }
 
-      const voteRecord = await disputeService.castJurorVote(id, req.user.walletAddress, choice as VoteChoice);
+      const voteRecord = await disputeService.castJurorVote(id, voterAddress, choice as VoteChoice);
 
       res.json({
         message: 'Juror vote recorded successfully',
