@@ -229,9 +229,10 @@ Make sure you have:
 * MetaMask for Web3 functionality
 * A Sepolia-compatible wallet for blockchain development
 
-See the complete setup guide:
+## Documentation
 
-**[Installation Guide](INSTALLATION.md)**
+- [Installation Guide](INSTALLATION.md)
+- [Architecture](docs/architecture.md)
 
 ---
 
