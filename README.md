@@ -147,7 +147,7 @@ The goal is simple:
 | Blockchain          | Ethereum                   |
 | Smart Contracts     | Solidity                   |
 | Development Network | Sepolia                    |
-| Wallet              | MetaMask                   |
+| Wallet              | MetaMask/Phantom           |
 | Monorepo            | npm Workspaces             |
 
 ---
