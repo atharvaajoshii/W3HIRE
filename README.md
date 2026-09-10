@@ -67,18 +67,17 @@ The goal is simple:
   <img src="docs/screenshots/landing-page.png" alt="NHCE Landing Page" width="850">
 </p>
 
-### Marketplace
+### Web3 Wallet & Escrow
 
 <p align="center">
-  <img src="docs/screenshots/marketplace.png" alt="NHCE Marketplace" width="850">
+  <img src="docs/screenshots/wallet.png" alt="NHCE Web3 Wallet and Escrow" width="850">
 </p>
 
-### Dashboard
+### Active Milestone Escrows
 
 <p align="center">
-  <img src="docs/screenshots/dashboard.png" alt="NHCE Dashboard" width="850">
+  <img src="docs/screenshots/escrow.png" alt="NHCE Active Milestone Escrows" width="850">
 </p>
-
 ## Features
 
 ### Authentication & Profiles
